@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mock DHL-Style Tracking (Demo Only)</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <style>
+    :root{
+      --brand-yellow:#ffcc00;
+      --brand-red:#d40511;
+      --text:#222;
+      --muted:#666;
+      --bg:#fafafa;
+      --card:#fff;
+      --border:#e5e7eb;
+      --radius:14px;
+      --shadow:0 6px 24px rgba(0,0,0,.08);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif;
+      color:var(--text);
+      background:linear-gradient(180deg, #fff, var(--bg) 600px);
+    }
+    header{
+      background:linear-gradient(90deg,var(--brand-yellow),#ffe479);
+      border-bottom:4px solid var(--brand-red);
+      padding:18px 16px;
+      position:sticky; top:0; z-index:10;
+    }
+    .wrap{max-width:980px; margin:0 auto; padding:0 16px}
+    .brand{
+      display:flex; align-items:center; gap:12px; font-weight:800; letter-spacing:.2px;
+    }
+    .brand .mark{
+      width:42px; height:28px; border:3px solid var(--brand-red); border-left-width:8px;
+      border-radius:6px; background:#fff;
+    }
+    .brand span{font-size:20px}
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:18px;
+      margin:18px 0;
+    }
+    h1{font-size:22px; margin:0 0 6px}
+    .muted{color:var(--muted); font-size:14px}
+    .grid{display:grid; grid-template-columns:1fr; gap:16px}
+    @media(min-width:720px){ .grid{grid-template-columns:1.2fr .8fr} }
+    label{display:block; font-weight:600; margin:8px 0 6px}
+    input[type="text"]{
+      width:100%; padding:12px 14px; border:1px solid var(--border); border-radius:10px; font-size:16px;
+    }
+    button{
+      appearance:none; border:0; border-radius:10px; padding:12px 16px; cursor:pointer; font-weight:700;
+      background:var(--brand-red); color:#fff;
+      transition:transform .03s ease-in-out, box-shadow .2s;
+      box-shadow:0 8px 18px rgba(212,5,17,.25);
+    }
+    button:active{ transform:translateY(1px) }
+    .summary{
+      display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:8px 0 0;
+      font-size:14px;
+    }
+    .badge{
+      display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:999px;
+      background:#111; color:#fff; font-weight:700; font-size:13px;
+    }
+    .badge .dot{width:8px; height:8px; border-radius:50%; background:#2ecc71}
+    table{width:100%; border-collapse:separate; border-spacing:0; margin-top:10px}
+    th, td{padding:12px 10px; border-bottom:1px solid var(--border); vertical-align:top; text-align:left; font-size:14px}
+    th{font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:#333}
+    tr:last-child td{border-bottom:0}
+    .status-chip{
+      display:inline-block; padding:6px 10px; border-radius:999px; background:#eef6ff; font-weight:600; font-size:12px;
+    }
+    .footnote{
+      font-size:12px; color:var(--muted); margin-top:12px
+    }
+    .disclaimer{
+      border-left:6px solid var(--brand-red);
+      background:#fff7d6;
+      padding:12px 14px; border-radius:10px;
+      font-size:13px; line-height:1.4;
+    }
+    code.inline{background:#f3f4f6; padding:2px 6px; border-radius:6px}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap brand">
+      <div class="mark" aria-hidden="true"></div>
+      <span>Mock Express • Tracking</span>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="card">
+      <h1>Track a Shipment</h1>
+      <p class="muted">Demo-only, not affiliated with DHL. Enter a tracking number or use the example.</p>
+      <form id="trackForm" class="grid" onsubmit="return go(event)">
+        <div>
+          <label for="tn">Tracking Number</label>
+          <input id="tn" type="text" placeholder="e.g. JD014600006512345678" autocomplete="off" />
+          <div class="footnote">Tip: You can link directly using <code class="inline">?tracking=JD014600006512345678</code></div>
+        </div>
+        <div style="align-self:end; display:flex; gap:8px; flex-wrap:wrap">
+          <button type="submit">Track</button>
+          <button type="button" onclick="useExample()" title="Fill with example number">Use Example</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="result" class="card" style="display:none">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap">
+        <div>
+          <div class="badge"><span class="dot"></span> Shipment found (mock)</div>
+          <h2 id="r-tid" style="margin:10px 0 6px; font-size:18px"></h2>
+          <div class="muted" id="r-service"></div>
+        </div>
+        <div class="summary">
+          <div><strong>Origin:</strong><br><span id="r-origin">Brussels, Belgium</span></div>
+          <div><strong>Destination:</strong><br><span id="r-dest">Shanghai, China</span></div>
+        </div>
+      </div>
+
+      <h3 style="margin:18px 0 8px">Tracking History</h3>
+      <table id="history">
+        <thead>
+          <tr><th>Date &amp; Time (Local)</th><th>Location</th><th>Status</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="footnote">Times and events are fictional and for demonstration / portfolio testing only.</div>
+    </div>
+
+    <div class="card disclaimer">
+      <strong>Disclaimer:</strong> This is a <em>mock</em> tracking interface for demos and testing. It is not affiliated with or endorsed by DHL. Do not use this to misrepresent real shipments.
+    </div>
+  </main>
+
+  <script>
+    // Example dataset (fictional)
+    const example = {
+      id: "JD014600006512345678",
+      service: "Express Worldwide (Mock)",
+      origin: "Brussels, Belgium",
+      dest: "Shanghai, China",
+      events: [
+        ["2025-08-12 09:12","Brussels, BE","Shipment information received"],
+        ["2025-08-12 15:44","Brussels, BE","Picked up by courier"],
+        ["2025-08-12 22:18","Brussels, BE","Departed facility"],
+        ["2025-08-13 04:51","Leipzig, DE","Arrived at sort facility"],
+        ["2025-08-13 07:36","Leipzig, DE","Processed at facility"],
+        ["2025-08-13 13:09","Leipzig, DE","Departed facility"],
+        ["2025-08-14 02:22","Hong Kong, HK","Arrived at transit hub"],
+        ["2025-08-14 06:41","Hong Kong, HK","Customs clearance in progress"],
+        ["2025-08-14 12:28","Hong Kong, HK","Customs status updated"],
+        ["2025-08-15 08:55","Shanghai, CN","Arrived at delivery facility"],
+        ["2025-08-15 14:47","Shanghai, CN","Out for delivery"],
+        ["2025-08-15 18:09","Shanghai, CN","Delivered — Signed by Li Wei"]
+      ]
+    };
+
+    // A super-light formatter
+    const el = s => document.querySelector(s);
+    function qs(name){
+      const p = new URLSearchParams(location.search);
+      return p.get(name);
+    }
+    function fill(data){
+      el("#result").style.display = "block";
+      el("#r-tid").textContent = "Tracking Number: " + data.id;
+      el("#r-service").textContent = data.service;
+      el("#r-origin").textContent = data.origin;
+      el("#r-dest").textContent = data.dest;
+      const body = el("#history tbody");
+      body.innerHTML = "";
+      data.events.forEach(row => {
+        const tr = document.createElement("tr");
+        row.forEach((cell, i)=>{
+          const td = document.createElement("td");
+          if(i===2) { // status column
+            const chip = document.createElement("span");
+            chip.className = "status-chip";
+            chip.textContent = cell;
+            td.appendChild(chip);
+          } else {
+            td.textContent = cell;
+          }
+          tr.appendChild(td);
+        });
+        body.appendChild(tr);
+      });
+    }
+
+    function useExample(){
+      el("#tn").value = example.id;
+      fill(example);
+      history.replaceState(null,"", "?tracking=" + encodeURIComponent(example.id));
+      return false;
+    }
+
+    function go(e){
+      e.preventDefault();
+      const val = (el("#tn").value || "").trim();
+      if(!val){ alert("Enter a tracking number"); return false; }
+      // For this demo, any input renders the example dataset, but uses your number.
+      const clone = JSON.parse(JSON.stringify(example));
+      clone.id = val;
+      fill(clone);
+      history.replaceState(null,"", "?tracking=" + encodeURIComponent(val));
+      return false;
+    }
+
+    // Initialize from query string
+    const initial = qs("tracking");
+    if(initial){
+      const clone = JSON.parse(JSON.stringify(example));
+      clone.id = initial;
+      fill(clone);
+      el("#tn").value = initial;
+    }
+  </script>
+</body>
+</html>
